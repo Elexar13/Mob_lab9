@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="IZLab4:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/IZLab4_jar</output-path>
+    <root id="archive" name="IZLab4.jar">
+      <element id="module-output" name="IZLab4" />
+    </root>
+  </artifact>
+</component>
