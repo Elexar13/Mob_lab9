@@ -6,17 +6,14 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Control;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Controller {
 
@@ -26,9 +23,11 @@ public class Controller {
     public TableView<Rule> table;
     public TableColumn<Rule, Integer> fromColumn;
     public TableColumn<Rule, Integer> toColumn;
+    public TextField resultText;
     int matrixSize = 5;
     String figure = "Кінь";
     Integer location;
+    Integer firstLocation;
 
     public static List<Integer> locationForHorse = new ArrayList();
     public static List<Integer> locationForElephant = new ArrayList();
@@ -37,6 +36,10 @@ public class Controller {
     public static List<Integer> locationToForHorse = new ArrayList();
     public static List<Integer> locationFromForElephant = new ArrayList();
     public static List<Integer> locationToForElephant = new ArrayList();
+
+    public static Map<Integer, List<Integer>> locationHorseMap = new HashMap<>();
+    public static Map<Integer, List<Integer>> locationElephantMap = new HashMap<>();
+    public static Set<Integer> visitedLocations = new LinkedHashSet<>();
 
     static ObservableList<Rule> rules = FXCollections.observableArrayList();
 
@@ -65,21 +68,11 @@ public class Controller {
         if (figure.equals("Кінь")){
             rules.clear();
             getLocationForHorse(location, matrixSize);
-
-            // определяем таблицу и устанавливаем данные
             table.setItems(rules);
             table.setPrefWidth(50);
             table.setPrefHeight(50);
-
-            // столбец для вывода имени
-            // определяем фабрику для столбца с привязкой к свойству name
             fromColumn.setCellValueFactory(new PropertyValueFactory<>("from"));
-            // добавляем столбец
-//            table.getColumns().add(fromColumn);
-
-            // столбец для вывода возраста
             toColumn.setCellValueFactory(new PropertyValueFactory<>("to"));
-//            table.getColumns().add(toColumn);
         }
         if (figure.equals("Слон")){
             rules.clear();
@@ -92,6 +85,7 @@ public class Controller {
         locationForHorse = new ArrayList<>();
         locationFromForHorse = new ArrayList<>();
         locationToForHorse = new ArrayList<>();
+        locationHorseMap = new HashMap<>();
         List<List<Integer>> matrix = new ArrayList<>();
         int n = matrixSize * matrixSize;
         List<Integer> row = new ArrayList<>();
@@ -105,9 +99,10 @@ public class Controller {
             }
         }
 
-        count = 1;
+        int key = 1;
         for (int i = 0; i < matrix.size(); i++){
             for (int j = 0; j < matrix.get(i).size(); j++){
+                locationHorseMap.put(key, new ArrayList<>());
                 for (int x = 0; x < matrix.size(); x++){
                     for (int y = 0; y < matrix.get(x).size(); y++){
                         if (((Math.abs(x - i) == 2 && Math.abs(y-j) == 1) || (Math.abs(x - i) == 1 && Math.abs(y-j) == 2))
@@ -117,12 +112,15 @@ public class Controller {
                             }
                             locationFromForHorse.add(matrix.get(i).get(j));
                             locationToForHorse.add(matrix.get(x).get(y));
+                            locationHorseMap.get(key).add(matrix.get(x).get(y));
                         }
                     }
                 }
-                count++;
+                key++;
             }
         }
+
+//        locationHorseMap.entrySet().forEach(x -> System.out.println(x));
 
         for (int i = 0; i < locationFromForHorse.size(); i++){
             rules.add(new Rule(locationFromForHorse.get(i), locationToForHorse.get(i)));
@@ -130,6 +128,7 @@ public class Controller {
     }
 
     public static void getLocationForElephant(Integer location, Integer matrixSize){
+        locationElephantMap = new HashMap<>();
         locationForElephant = new ArrayList<>();
         locationFromForElephant = new ArrayList<>();
         locationToForElephant = new ArrayList<>();
@@ -146,8 +145,10 @@ public class Controller {
             }
         }
 
+        int key = 1;
         for (int i = 0; i < matrix.size(); i++){
             for (int j = 0; j < matrix.get(i).size(); j++){
+                locationElephantMap.put(key, new ArrayList<>());
                 for (int x = 0; x < matrix.size(); x++){
                     for (int y = 0; y < matrix.get(x).size(); y++){
                         if ((Math.abs(x - i) == Math.abs(y-j)) && !matrix.get(i).get(j).equals(matrix.get(x).get(y))) {
@@ -156,9 +157,11 @@ public class Controller {
                             }
                             locationFromForElephant.add(matrix.get(i).get(j));
                             locationToForElephant.add(matrix.get(x).get(y));
+                            locationElephantMap.get(key).add(matrix.get(x).get(y));
                         }
                     }
                 }
+                key++;
             }
         }
 
@@ -186,43 +189,25 @@ public class Controller {
                     color = "#d18b47";
                 }
                 square.setStyle("-fx-background-color: "+color+";");
-                if ((location != null && figure.equals("Кінь") && locationForHorse.contains(count))){
-                    square.setStyle("-fx-border-color: #000000; -fx-background-color: "+color +"; -fx-border-width: 5;");
-                    Image img = new Image("horse.png");
-                    ImageView imgView = new ImageView(img);
-                    imgView.setFitWidth(35);
-                    imgView.setFitHeight(35);
-                    square.getChildren().add(imgView);
-                }
-                if (Objects.equals(location, count) && figure.equals("Кінь")){
-                    square.setStyle("-fx-border-color: #ffffff; -fx-background-color: "+color +"; -fx-border-width: 5;");
-                    Image img = new Image("horse.png");
-                    ImageView imgView = new ImageView(img);
-                    imgView.setFitWidth(35);
-                    imgView.setFitHeight(35);
-                    square.getChildren().add(imgView);
-                }
-                if (Objects.equals(location, count) && figure.equals("Слон")){
-                    square.setStyle("-fx-border-color: #ffffff; -fx-background-color: "+color +"; -fx-border-width: 5;");
-                    Image img = new Image("elephant.png");
-                    ImageView imgView = new ImageView(img);
-                    imgView.setFitWidth(35);
-                    imgView.setFitHeight(35);
-                    square.getChildren().add(imgView);
-                }
-                if ((location != null && figure.equals("Слон") && locationForElephant.contains(count))){
-                    square.setStyle("-fx-border-color: #000000; -fx-background-color: "+color +"; -fx-border-width: 5;");
-                    Image img = new Image("elephant.png");
-                    ImageView imgView = new ImageView(img);
-                    imgView.setFitWidth(35);
-                    imgView.setFitHeight(35);
-                    square.getChildren().add(imgView);
-                }
                 square.getChildren().add(new Text(String.valueOf(count)));
                 square.setOnMouseClicked(e -> {
-                    Text txt = (Text) square.getChildren().get(0);
+                    Text txt = null;
+                    try {
+                        txt = (Text) square.getChildren().get(0);
+                    } catch (Exception ex) {
+                        txt = (Text) square.getChildren().get(1);
+                    }
                     location = Integer.parseInt(txt.getText());
-                    getLocationsForFigures();
+                    firstLocation = location;
+//                    getLocationsForFigures();
+                    visitedLocations.add(location);
+                    if (figure.equals("Кінь")){
+                        calculateTripForHorse();
+                    } if (figure.equals("Слон")){
+                        calculateTripForElephant();
+                    }
+                    drawBoardFolLR5();
+                    visitedLocations.clear();
                 });
                 root.add(square, col, row);
                 count++;
@@ -232,5 +217,121 @@ public class Controller {
             root.getColumnConstraints().add(new ColumnConstraints(5, Control.USE_COMPUTED_SIZE, Double.POSITIVE_INFINITY, Priority.ALWAYS, HPos.CENTER, true));
             root.getRowConstraints().add(new RowConstraints(5, Control.USE_COMPUTED_SIZE, Double.POSITIVE_INFINITY, Priority.ALWAYS, VPos.CENTER, true));
         }
+    }
+
+    public void drawBoardFolLR5(){
+        List<StackPane> children = new ArrayList<>();
+        for(Node square : root.getChildren()){
+            children.add((StackPane) square);
+        }
+        int i = 1;
+        for (Integer loc : visitedLocations){
+            for (StackPane square : children) {
+                Text txt = (Text) square.getChildren().get(0);
+                if(Integer.parseInt(txt.getText()) == loc){
+                    ((Text) square.getChildren().get(0)).setText(String.valueOf(i));
+                    i++;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void calculateTripForHorse() {
+        try {
+            while (visitedLocations.size() != matrixSize * matrixSize) {
+                List<Integer> nextLocations = locationHorseMap.get(location);
+                Map<Integer, Integer> countOfNextLocationsMap = new HashMap<>();
+                for (Integer loc : nextLocations) {
+                    Integer count = locationHorseMap.get(loc).size();
+                    for (Integer l : locationHorseMap.get(loc)) {
+                        if (visitedLocations.contains(l)) count--;
+                    }
+                    if (!visitedLocations.contains(loc)) countOfNextLocationsMap.put(loc, count);
+                }
+                int minCount = countOfNextLocationsMap.entrySet().stream().mapToInt(e -> e.getValue()).min().getAsInt();
+                countOfNextLocationsMap.entrySet().removeIf(e -> e.getValue() != minCount);
+                nextLocations = countOfNextLocationsMap.keySet().stream().filter(l -> !visitedLocations.contains(l)).collect(Collectors.toList());
+                if (nextLocations.size() > 1) {
+                    int min = 0;
+                    int max = nextLocations.size();
+                    int diff = max - min;
+                    Random random = new Random();
+                    int i = random.nextInt(diff);
+                    location = nextLocations.get(i);
+                } else {
+                    location = nextLocations.get(0);
+                }
+                visitedLocations.add(location);
+                System.out.println(visitedLocations);
+            }
+            StringBuilder sb = new StringBuilder();
+            visitedLocations.forEach(l -> sb.append(l).append(" -> "));
+            resultText.setText(sb.substring(0, sb.toString().length()-3));
+        }  catch (Exception ex) {
+            try{
+                location = firstLocation;
+                visitedLocations.clear();
+                visitedLocations.add(location);
+                System.out.println("____________________________________________________________________________________");
+                calculateTripForHorse();
+            } catch (StackOverflowError err){
+                System.out.println("Кінь не може пройти всю дошку з положення " + firstLocation);
+                resultText.setText("Кінь не може пройти всю дошку з положення ");
+                return;
+            }
+
+        }
+    }
+
+    private void calculateTripForElephant() {
+        try {
+            while (visitedLocations.size() != matrixSize * matrixSize) {
+                List<Integer> nextLocations = locationElephantMap.get(location);
+                Map<Integer, Integer> countOfNextLocationsMap = new HashMap<>();
+                for (Integer loc : nextLocations) {
+                    Integer count = locationElephantMap.get(loc).size();
+                    for (Integer l : locationElephantMap.get(loc)) {
+                        if (visitedLocations.contains(l)) count--;
+                    }
+                    if (!visitedLocations.contains(loc)) countOfNextLocationsMap.put(loc, count);
+                }
+                int minCount = countOfNextLocationsMap.entrySet().stream().mapToInt(e -> e.getValue()).min().getAsInt();
+                countOfNextLocationsMap.entrySet().removeIf(e -> e.getValue() != minCount);
+                nextLocations = countOfNextLocationsMap.keySet().stream().filter(l -> !visitedLocations.contains(l)).collect(Collectors.toList());
+                if (nextLocations.size() > 1) {
+                    int min = 0;
+                    int max = nextLocations.size();
+                    int diff = max - min;
+                    Random random = new Random();
+                    int i = random.nextInt(diff);
+                    location = nextLocations.get(i);
+                } else {
+                    location = nextLocations.get(0);
+                }
+                visitedLocations.add(location);
+                System.out.println(visitedLocations);
+            }
+            StringBuilder sb = new StringBuilder();
+            visitedLocations.forEach(l -> sb.append(l).append(" -> "));
+            resultText.setText(sb.substring(0, sb.toString().length()-3));
+        }  catch (Exception ex) {
+            try{
+                location = firstLocation;
+                visitedLocations.clear();
+                visitedLocations.add(location);
+                System.out.println("____________________________________________________________________________________");
+                calculateTripForElephant();
+            } catch (StackOverflowError err){
+                System.out.println("Слон не може пройти всю дошку з положення " + firstLocation);
+                resultText.setText("Слон не може пройти всю дошку з положення ");
+                return;
+            }
+
+        }
+    }
+
+    public void refreshBoard(ActionEvent actionEvent) {
+        drawBoard();
     }
 }

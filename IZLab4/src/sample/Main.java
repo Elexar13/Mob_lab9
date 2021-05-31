@@ -16,7 +16,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
         primaryStage.setTitle("Bochkov 303");
-        primaryStage.setScene(new Scene(root, 1050, 650));
+        primaryStage.setScene(new Scene(root, 1100, 800));
         primaryStage.show();
     }
 
